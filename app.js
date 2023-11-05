@@ -5,10 +5,8 @@ const saltRounds = 10;
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
+const Todos = require("./models/todo.model");
 const User = require("./models/user.model");
-// const jwt = require("jsonwebtoken");
-// const passport = require("passport");
-// const SECRET_KEY = process.env.SECRET_KEY;
 const app = express();
 
 // CROSS PLATFORM RESOURCE SHARING
@@ -23,10 +21,6 @@ app.use(
     extended: true,
   })
 );
-
-// USE PASSPORT
-// app.use(passport.initialize());
-// require("./config/passport");
 
 // HOME ROUTE
 app.get("/", (req, res) => {
@@ -106,70 +100,148 @@ app.post("/login", async (req, res) => {
   return res.status(200).send({
     success: true,
     id: user._id,
+    email: user.email,
+    fullName: user.fullName,
     message: "User is logged in successfully",
   });
+});
+
+// ADD TODO
+app.post("/api/addtodo", async (req, res) => {
+  try {
+    // Destructure body data
+    const reqUserEmail = req.body.email;
+    const reqTitle = req.body.title;
+    const reqDesc = req.body.desc;
+    const reqDueDateTime = req.body.dueDateTime;
+
+    const newTodo = new Todos({
+      userEmail: reqUserEmail,
+      title: reqTitle,
+      description: reqDesc,
+      dueDateTime: reqDueDateTime,
+    });
+
+    const user = await User.findOne({ email: reqUserEmail });
+
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User doesn't exist!",
+      });
+    }
+
+    const todo = await newTodo.save();
+    res.send({
+      success: true,
+      message: `New todo is added to the database successfully!`,
+      todo: {
+        todo,
+      },
+    });
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// GET TODO
+app.get("/api/gettodo", async (req, res) => {
+  try {
+    // Destructure query paramter data (only used in get request)
+    const reqUserEmail = req.query.email;
+
+    const user = await User.findOne({ userEmail: reqUserEmail });
+
+    // If user not found
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User doesn't exist!",
+      });
+    }
+
+    const allTodos = await Todos.find({ userEmail: reqUserEmail });
+    res.send({
+      success: true,
+      message: `All todos are fetched from the database successfully!`,
+      allTodos: allTodos,
+    });
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// UPDATE TODO
+app.patch("/api/updatetodo", async (req, res) => {
+  try {
+    // Destructure query paramter data (only used in get request)
+    const reqId = req.body._id;
+    const reqTitle = req.body.thisTitle;
+    const reqDesc = req.body.thisDescription;
+    const reqDueDateTime = req.body.editedDueTime;
+    const reqProgress = req.body.progress;
+    const reqPriority = req.body.priorityValue;
+
+    console.log("req.body: ", req.body);
+
+    if (reqTitle) {
+      await Todos.updateOne({ _id: reqId }, { $set: { title: reqTitle } });
+    }
+    if (reqDesc) {
+      await Todos.updateOne({ _id: reqId }, { $set: { description: reqDesc } });
+    }
+    if (reqDueDateTime) {
+      await Todos.updateOne(
+        { _id: reqId },
+        { $set: { dueDateTime: reqDueDateTime } }
+      );
+    }
+    if (reqProgress) {
+      await Todos.updateOne(
+        { _id: reqId },
+        { $set: { progress: reqProgress } }
+      );
+    }
+    if (reqPriority) {
+      await Todos.updateOne(
+        { _id: reqId },
+        { $set: { priority: reqPriority } }
+      );
+    }
+    const todo = await Todos.findOne({ _id: reqId });
+    res.send({
+      success: true,
+      message: `Todo with id ${reqId} has been updated successfully!`,
+      todo: todo,
+    });
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// DELETE TODO
+app.delete("/api/deletetodo/:_id", async (req, res) => {
+  try {
+    // Destructure query paramter data (only used in get request)
+    const reqId = req.params._id;
+
+    await Todos.deleteOne({ _id: reqId });
+    const todos = await Todos.find();
+
+    res.status(200).send({
+      success: true,
+      message: `Todo with id ${reqId} has been deleted successfully!`,
+      todos: todos,
+    });
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
 });
 
 // profile route
 app.get("/profile", (req, res) => {
   return res.status(200).send("Welcome to profile");
 });
-
-// LOGIN ROUTE
-// app.post("/login", async (req, res) => {
-//   // Destructure body data
-//   const reqEmail = req.body.email;
-//   const reqPassword = req.body.password;
-
-//   const user = await User.findOne({ email: reqEmail });
-
-//   // If user doesn't exists
-//   if (!user) {
-//     return res.status(404).send({
-//       success: false,
-//       message: `Sorry! User with email ${reqEmail} doesn't exists. Try with the correct one.`,
-//     });
-//   }
-
-//   // If password is incorrect
-//   if (!bcrypt.compareSync(reqPassword, user.password)) {
-//     return res.status(401).send({
-//       success: false,
-//       message: `Sorry! This password is incoreect. Try with the correct one.`,
-//     });
-//   }
-
-//   // if password is correct
-//   const payload = {
-//     id: user._id,
-//     email: user.email,
-//   };
-
-//   // const token = jwt.sign(payload, SECRET_KEY, {
-//   //   expiresIn: "7d",
-//   // });
-
-//   return res.status(200).send({
-//     success: true,
-//     message: "Login Successful. Welcome!",
-//     // token: "Bearer " + token,
-//   });
-// });
-
-// PROTECTED TODAY ROUTE - with passport
-// app.get(
-//   "/profile",
-//   passport.authenticate("jwt", { session: false }),
-//   (req, res) => {
-//     return res.status(200).send({
-//       success: true,
-//       // user: {
-//       //   id: req.user._id,
-//       //   email: req.user.email,
-//       // },
-//     });
-//   }
-// );
 
 // RESOURCE NOT FOUND
 app.use((req, res, next) => {
