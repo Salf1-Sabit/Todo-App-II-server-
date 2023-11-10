@@ -114,12 +114,14 @@ app.post("/api/addtodo", async (req, res) => {
     const reqTitle = req.body.title;
     const reqDesc = req.body.desc;
     const reqDueDateTime = req.body.dueDateTime;
+    const reqTodoStatus = req.body.newTodoStatus;
 
     const newTodo = new Todos({
       userEmail: reqUserEmail,
       title: reqTitle,
       description: reqDesc,
       dueDateTime: reqDueDateTime,
+      todoStatus: reqTodoStatus,
     });
 
     const user = await User.findOne({ email: reqUserEmail });
@@ -181,8 +183,7 @@ app.patch("/api/updatetodo", async (req, res) => {
     const reqDueDateTime = req.body.editedDueTime;
     const reqProgress = req.body.progress;
     const reqPriority = req.body.priorityValue;
-
-    console.log("req.body: ", req.body);
+    const reqTodoStatus = req.body.todoStatus;
 
     if (reqTitle) {
       await Todos.updateOne({ _id: reqId }, { $set: { title: reqTitle } });
@@ -206,6 +207,12 @@ app.patch("/api/updatetodo", async (req, res) => {
       await Todos.updateOne(
         { _id: reqId },
         { $set: { priority: reqPriority } }
+      );
+    }
+    if (reqTodoStatus === false || reqTodoStatus === true) {
+      await Todos.updateOne(
+        { _id: reqId },
+        { $set: { todoStatus: reqTodoStatus } }
       );
     }
     const todo = await Todos.findOne({ _id: reqId });
