@@ -163,10 +163,14 @@ app.get("/api/gettodo", async (req, res) => {
     }
 
     const allTodos = await Todos.find({ userEmail: reqUserEmail });
+    const fullTodos = await Todos.find();
+    const allUsers = await User.find();
     res.send({
       success: true,
       message: `All todos are fetched from the database successfully!`,
       allTodos: allTodos,
+      fullTodos: fullTodos,
+      allUsers: allUsers,
     });
   } catch (error) {
     res.status(500).send(error.message);
