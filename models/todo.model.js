@@ -18,7 +18,7 @@ const todoSchema = mongoose.Schema({
   },
   priority: {
     type: Number,
-    default: 0,
+    default: 4,
   },
   progress: {
     type: Number,

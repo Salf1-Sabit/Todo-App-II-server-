@@ -177,6 +177,20 @@ app.get("/api/gettodo", async (req, res) => {
   }
 });
 
+// GET USERS
+app.get("/api/getallusers", async (req, res) => {
+  try {
+    const allUser = await User.find();
+    res.send({
+      success: true,
+      message: `All users are fetched from the database successfully!`,
+      allUser: allUser,
+    });
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
 // UPDATE TODO
 app.patch("/api/updatetodo", async (req, res) => {
   try {
@@ -188,6 +202,7 @@ app.patch("/api/updatetodo", async (req, res) => {
     const reqProgress = req.body.progress;
     const reqPriority = req.body.priorityValue;
     const reqTodoStatus = req.body.todoStatus;
+    const reqCurTime = req.body.curTime;
 
     if (reqTitle) {
       await Todos.updateOne({ _id: reqId }, { $set: { title: reqTitle } });
@@ -219,11 +234,41 @@ app.patch("/api/updatetodo", async (req, res) => {
         { $set: { todoStatus: reqTodoStatus } }
       );
     }
+
+    if (reqCurTime) {
+      await User.updateOne({ _id: reqId }, { $set: { lastLogin: reqCurTime } });
+    }
+
     const todo = await Todos.findOne({ _id: reqId });
     res.send({
       success: true,
       message: `Todo with id ${reqId} has been updated successfully!`,
       todo: todo,
+    });
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// UPDATE USER
+app.patch("/api/updateuser", async (req, res) => {
+  try {
+    // Destructure query paramter data (only used in get request)
+    const reqEmail = req.body.email;
+    const reqCurTime = req.body.curTime;
+
+    if (reqCurTime) {
+      await User.updateOne(
+        { email: reqEmail },
+        { $set: { lastLogin: reqCurTime } }
+      );
+    }
+
+    const user = await User.findOne({ email: reqEmail });
+    res.send({
+      success: true,
+      message: `User with email ${reqEmail} has been updated successfully!`,
+      user: user,
     });
   } catch (error) {
     res.status(500).send(error.message);

@@ -15,6 +15,9 @@ const userSchema = mongoose.Schema({
     type: String,
     require: true,
   },
+  lastLogin: {
+    type: Date,
+  },
   createdOn: {
     type: Date,
     default: Date.now,
